@@ -30,7 +30,7 @@ RUN apt-get update && \
     addgroup --system nginx && \
     adduser --system --no-create-home --disabled-login --ingroup nginx nginx
 
-RUN bun install cheerio pino pino-pretty 
+RUN bun install cheerio@1.0.0-rc.12 pino pino-pretty 
 
 COPY --link --from=prepares /prepares/ /app/
 COPY --link --from=prepares /prepares/dist/ /usr/share/nginx/html/
