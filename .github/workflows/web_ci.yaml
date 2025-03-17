@@ -88,6 +88,7 @@ jobs:
         run: |
           cd app && \
           pnpm install && \
+          pnpm build && \
           cp .development.env deploy/.env && \
           rm -rf deploy/dist && \
           cp -r dist deploy/
