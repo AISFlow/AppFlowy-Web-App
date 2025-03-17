@@ -15,7 +15,8 @@ RUN corepack enable && \
 RUN git clone --depth 1 --branch ${VERSION} https://github.com/AppFlowy-IO/AppFlowy-Web.git .
 
 RUN pnpm install && \
-    pnpm build
+    pnpm build && \
+    rm -rf node_modules
 
 FROM oven/bun:latest AS base
 
