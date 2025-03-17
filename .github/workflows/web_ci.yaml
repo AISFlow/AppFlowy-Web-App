@@ -4,9 +4,8 @@ on:
     paths:
       - 'Dockerfile'
   workflow_dispatch:
+
 env:
-  NODE_VERSION: "18.16.0"
-  PNPM_VERSION: "8.5.0"
   REGISTRY_GHCR: ghcr.io
   REGISTRY_DOCKER: docker.io
   IMAGE_NAME: ${{ github.repository }}
@@ -35,7 +34,7 @@ jobs:
             type=semver,pattern={{major}}
             type=raw,value={{date 'YYYYMMDD-HHmmss' tz='Asia/Seoul'}}
           labels: |
-            maintainer=your-email@example.com
+            maintainer=aisflow@askfront.com
           flavor: |
             latest=true
 
@@ -70,29 +69,6 @@ jobs:
           LOWER_CASE_IMAGE_NAME=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
           echo "LOWER_CASE=${LOWER_CASE_IMAGE_NAME}" >> $GITHUB_ENV
 
-      - name: setup node
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: setup AppFlowy-Web
-        run: |
-          git clone https://github.com/AppFlowy-IO/AppFlowy-Web.git app
-
-      - name: setup install frontend dependencies
-        run: |
-          cd app && \
-          pnpm install && \
-          pnpm build && \
-          cp .development.env deploy/.env && \
-          rm -rf deploy/dist && \
-          cp -r dist deploy/
-          
       - name: Log into GitHub Container Registry (GHCR)
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
@@ -112,7 +88,7 @@ jobs:
       - name: Build and push to GHCR
         uses: docker/build-push-action@v6
         with:
-          context: deploy
+          context: .
           push: true
           tags: ${{ env.REGISTRY_GHCR }}/${{ env.LOWER_CASE }}:${{ matrix.platform }}
           labels: ${{ needs.set-up.outputs.labels }}
@@ -121,8 +97,48 @@ jobs:
       - name: Build and push to Docker Hub
         uses: docker/build-push-action@v6
         with:
-          context: deploy
+          context: .
           push: true
           tags: ${{ env.REGISTRY_DOCKER }}/${{ env.LOWER_CASE }}:${{ matrix.platform }}
           labels: ${{ needs.set-up.outputs.labels }}
           platforms: linux/${{ matrix.platform }}
+
+  manifest:
+    needs: [set-up, build]
+    runs-on: [linux, ARM64]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Log into GitHub Container Registry (GHCR)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_GHCR }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log into Docker Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_DOCKER }}
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Convert IMAGE_NAME to lowercase
+        run: |
+          LOWER_CASE_IMAGE_NAME=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME_LOWER=${LOWER_CASE_IMAGE_NAME}" >> $GITHUB_ENV
+
+      - name: Create and push Docker manifest
+        uses: int128/docker-manifest-create-action@v2
+        with:
+          index-annotations: |
+            ${{ needs.set-up.outputs.labels }}
+          tags: |
+            ${{ needs.set-up.outputs.tags }}
+          sources: |
+            ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME_LOWER }}:amd64
+            ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME_LOWER }}:arm64
