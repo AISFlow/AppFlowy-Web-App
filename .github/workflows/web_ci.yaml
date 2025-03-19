@@ -2,8 +2,6 @@ name: Docker CI
 
 on:
   push:
-    paths:
-      - 'Dockerfile'
     tags: ['v*.*.*']
   workflow_dispatch:
 
