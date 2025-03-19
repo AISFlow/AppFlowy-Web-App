@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'Dockerfile'
+    tags: ['v*.*.*']
   workflow_dispatch:
 
 env:
