@@ -4,7 +4,12 @@ on:
   push:
     tags: ['*.*.*']
   workflow_dispatch:
-
+  
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  
 env:
   REGISTRY_GHCR: ghcr.io
   REGISTRY_DOCKER: docker.io
