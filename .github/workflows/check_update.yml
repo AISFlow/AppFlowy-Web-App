@@ -4,14 +4,16 @@ on:
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
-
+  
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
