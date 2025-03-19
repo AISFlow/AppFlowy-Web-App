@@ -9,7 +9,7 @@ permissions:
   contents: read
   packages: write
   id-token: write
-  
+  actions: write
 env:
   REGISTRY_GHCR: ghcr.io
   REGISTRY_DOCKER: docker.io
